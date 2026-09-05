@@ -426,7 +426,22 @@
     box-shadow:inset 0 0 60px rgba(0,0,0,0.85), inset 0 0 12px rgba(96,255,170,0.08);
     padding:22px 22px 16px;
     overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    max-height:82vh;
   }
+  .tab-scroll{
+    overflow-y:auto;
+    overflow-x:hidden;
+    flex:1 1 auto;
+    min-height:0;
+    margin-right:-8px;
+    padding-right:8px;
+  }
+  .tab-scroll::-webkit-scrollbar{ width:8px; }
+  .tab-scroll::-webkit-scrollbar-track{ background:transparent; }
+  .tab-scroll::-webkit-scrollbar-thumb{ background:rgba(143,245,184,0.25); border-radius:8px; }
+  .tab-scroll::-webkit-scrollbar-thumb:hover{ background:rgba(143,245,184,0.4); }
   .scanlines{
     position:absolute;inset:0;
     background:repeating-linear-gradient(180deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 2px, transparent 3px);
@@ -829,6 +844,7 @@
           <button class="menu-tab plan3000" data-tab="plan">Links</button>
         </div>
 
+        <div class="tab-scroll">
         <div class="tab-panel" id="panel-notes">
           <textarea class="term-input notes" id="noteArea" placeholder="begin writing..." spellcheck="false"></textarea>
           <div class="cat-row" id="noteCatRow">
@@ -928,6 +944,7 @@
             <div class="links-hint" id="vaultToast">Loading auto-detects what it's looking at &mdash; a Rune backup restores itself here; an Action Plan 3000 backup pulls its Girls &amp; Car/Appt days straight into the calendar.</div>
           </div>
         </div>
+        </div>
 
         <div class="term-foot">
           <span id="footLeft">0 words</span>
@@ -940,8 +957,13 @@
 <script>
 (function(){
   // ---------- Ambient generative music (gentle, JRPG-town-ish) ----------
+  // plus a natural outdoor layer (breeze, wind chimes, occasional gulls)
+  // and a switchable reverb tail for the "inside the notebook" feel.
   let ctx=null, masterGain=null, filterNode=null, running=false, muted=false;
+  let outputGain=null, dryGain=null, reverbSend=null, convolver=null, wetGain=null;
+  let windSrc=null, windGain=null, windFilter=null, gullTimer=null, chimeTimer=null, gustTimer=null;
   let scheduledIds=[];
+  let notebookOpenAudio=false;
 
   const scale=[0,3,5,7,10,12,15,19]; // A minor pentatonic-ish w/ 7th, relative semitones
   const rootFreq=220; // A3
@@ -951,9 +973,54 @@
     return rootFreq * Math.pow(2, semis/12);
   }
 
+  // a short synthetic reverb tail (decaying noise) — no external IR file needed
+  function makeReverbBuffer(seconds, decay){
+    const len = Math.floor(ctx.sampleRate*seconds);
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for(let ch=0; ch<2; ch++){
+      const data = buf.getChannelData(ch);
+      for(let i=0; i<len; i++){
+        data[i] = (Math.random()*2-1) * Math.pow(1 - i/len, decay);
+      }
+    }
+    return buf;
+  }
+
+  // a few seconds of looping brown noise — the raw material for the breeze
+  function makeBrownNoiseBuffer(seconds){
+    const len = Math.floor(ctx.sampleRate*seconds);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    let last=0;
+    for(let i=0; i<len; i++){
+      const white = Math.random()*2-1;
+      last = (last + 0.02*white) / 1.02;
+      data[i] = last*3.2;
+    }
+    return buf;
+  }
+
   function initAudio(){
     if(ctx) return;
     ctx = new (window.AudioContext||window.webkitAudioContext)();
+
+    // final stage: everything funnels here, and this is what mute controls
+    outputGain = ctx.createGain();
+    outputGain.gain.value = 1;
+    outputGain.connect(ctx.destination);
+
+    // dry / wet (reverb) split, shared by every sound source below
+    dryGain = ctx.createGain(); dryGain.gain.value = 1;
+    reverbSend = ctx.createGain(); reverbSend.gain.value = 0.12;
+    convolver = ctx.createConvolver();
+    convolver.buffer = makeReverbBuffer(2.6, 2.2);
+    wetGain = ctx.createGain(); wetGain.gain.value = 1;
+    dryGain.connect(outputGain);
+    reverbSend.connect(convolver);
+    convolver.connect(wetGain);
+    wetGain.connect(outputGain);
+
+    // the generative pad/pluck music — unchanged internally, just re-routed
     masterGain = ctx.createGain();
     masterGain.gain.value = 0.0;
     filterNode = ctx.createBiquadFilter();
@@ -961,8 +1028,26 @@
     filterNode.frequency.value = 2200;
     filterNode.Q.value = 0.4;
     masterGain.connect(filterNode);
-    filterNode.connect(ctx.destination);
-    masterGain.gain.linearRampToValueAtTime(0.16, ctx.currentTime+2.5);
+    filterNode.connect(dryGain);
+    filterNode.connect(reverbSend);
+    masterGain.gain.linearRampToValueAtTime(0.20, ctx.currentTime+2.5);
+
+    // continuous breeze — brown noise, band-shaped, with slow gusting
+    windSrc = ctx.createBufferSource();
+    windSrc.buffer = makeBrownNoiseBuffer(4);
+    windSrc.loop = true;
+    windFilter = ctx.createBiquadFilter();
+    windFilter.type='bandpass';
+    windFilter.frequency.value=650;
+    windFilter.Q.value=0.6;
+    windGain = ctx.createGain();
+    windGain.gain.value = 0.0;
+    windSrc.connect(windFilter);
+    windFilter.connect(windGain);
+    windGain.connect(dryGain);
+    windGain.connect(reverbSend);
+    windSrc.start();
+    windGain.gain.linearRampToValueAtTime(0.075, ctx.currentTime+3);
   }
 
   function pluck(freq, time, dur, gainAmt){
@@ -989,6 +1074,118 @@
     o1.connect(g); o2.connect(g); g.connect(masterGain);
     o1.start(time); o2.start(time);
     o1.stop(time+dur+0.1); o2.stop(time+dur+0.1);
+  }
+
+  // a single wind-chime strike — bright, bell-like, long soft decay
+  function chime(freq, time, gainAmt){
+    const o1=ctx.createOscillator(), o2=ctx.createOscillator();
+    const g=ctx.createGain();
+    o1.type='sine'; o1.frequency.value=freq;
+    o2.type='sine'; o2.frequency.value=freq*2.41; // inharmonic partial, metallic character
+    const g2=ctx.createGain(); g2.gain.value=0.18;
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.linearRampToValueAtTime(gainAmt, time+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, time+3.2);
+    o1.connect(g); o2.connect(g2); g2.connect(g);
+    g.connect(dryGain); g.connect(reverbSend);
+    o1.start(time); o2.start(time);
+    o1.stop(time+3.3); o2.stop(time+3.3);
+  }
+  function scheduleChime(){
+    if(!running){ chimeTimer=null; return; }
+    const delay = 5000 + Math.random()*11000;
+    chimeTimer = setTimeout(function(){
+      if(running && !notebookOpenAudio){
+        const step = Math.floor(Math.random()*scale.length);
+        chime(freqFor(step, 2), ctx.currentTime+0.02, 0.05+Math.random()*0.03);
+        // chimes often come in a soft little cluster, like several rods catching the same gust
+        if(Math.random() < 0.5){
+          const step2 = Math.floor(Math.random()*scale.length);
+          chime(freqFor(step2, 2), ctx.currentTime+0.25+Math.random()*0.3, 0.03+Math.random()*0.02);
+        }
+      }
+      scheduleChime();
+    }, delay);
+  }
+
+  // a distant gull cry — a short pitch-swooped, slightly warbly tone
+  function seagullCry(time, pan){
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+    const bp=ctx.createBiquadFilter();
+    bp.type='bandpass'; bp.frequency.value=2000; bp.Q.value=1.1;
+    o.type='sawtooth';
+    const f0 = 1500+Math.random()*500;
+    o.frequency.setValueAtTime(f0, time);
+    o.frequency.linearRampToValueAtTime(f0*1.3, time+0.12);
+    o.frequency.linearRampToValueAtTime(f0*0.85, time+0.3);
+    o.frequency.linearRampToValueAtTime(f0*1.05, time+0.42);
+    o.frequency.linearRampToValueAtTime(f0*0.7, time+0.6);
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.linearRampToValueAtTime(0.05, time+0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, time+0.65);
+    o.connect(bp); bp.connect(g);
+    let out=g;
+    if(window.StereoPannerNode){
+      const p=ctx.createStereoPanner(); p.pan.value=pan;
+      g.connect(p); out=p;
+    }
+    out.connect(dryGain); out.connect(reverbSend);
+    o.start(time); o.stop(time+0.7);
+  }
+  function scheduleGull(){
+    if(!running){ gullTimer=null; return; }
+    const delay = 18000 + Math.random()*30000;
+    gullTimer = setTimeout(function(){
+      if(running && !notebookOpenAudio && Math.random() < 0.7){
+        seagullCry(ctx.currentTime+0.02, (Math.random()*1.6-0.8));
+        if(Math.random() < 0.3){
+          seagullCry(ctx.currentTime+0.5+Math.random()*0.4, (Math.random()*1.6-0.8));
+        }
+      }
+      scheduleGull();
+    }, delay);
+  }
+
+  // slow random gusting for the breeze bed
+  function scheduleGust(){
+    if(!running){ gustTimer=null; return; }
+    const delay = 3000 + Math.random()*4000;
+    gustTimer = setTimeout(function(){
+      if(running && windGain){
+        const base = notebookOpenAudio ? 0.02 : 0.075;
+        const target = base + Math.random()*(notebookOpenAudio?0.015:0.05);
+        windGain.gain.cancelScheduledValues(ctx.currentTime);
+        windGain.gain.linearRampToValueAtTime(muted?0.0:target, ctx.currentTime+2+Math.random()*2);
+        if(windFilter){
+          windFilter.frequency.cancelScheduledValues(ctx.currentTime);
+          windFilter.frequency.linearRampToValueAtTime(450+Math.random()*500, ctx.currentTime+2.5);
+        }
+      }
+      scheduleGust();
+    }, delay);
+  }
+
+  // a struck tuning fork — two close sine partials that beat softly, ringing
+  // out through the reverb, played the moment the notebook is opened
+  function playTuningFork(){
+    if(!ctx || muted) return;
+    const t = ctx.currentTime;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.22, t+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+3.6);
+    const o1=ctx.createOscillator(), o2=ctx.createOscillator(), o3=ctx.createOscillator();
+    o1.type='sine'; o1.frequency.value=528;
+    o2.type='sine'; o2.frequency.value=531; // slow beat against o1
+    o3.type='sine'; o3.frequency.value=1056; // octave shimmer
+    const g3=ctx.createGain(); g3.gain.value=0.22;
+    o1.connect(g); o2.connect(g); o3.connect(g3); g3.connect(g);
+    g.connect(dryGain);
+    const forkSend=ctx.createGain(); forkSend.gain.value=0.55; // extra echo just for this hit
+    g.connect(forkSend); forkSend.connect(convolver);
+    o1.start(t); o2.start(t); o3.start(t);
+    o1.stop(t+3.7); o2.stop(t+3.7); o3.stop(t+3.7);
   }
 
   let nextNoteTime=0;
@@ -1027,29 +1224,66 @@
       running=true;
       nextNoteTime = ctx.currentTime+0.3;
       scheduler();
+      scheduleChime();
+      scheduleGull();
+      scheduleGust();
     }
   }
 
   function setMuted(m){
     muted=m;
     if(!ctx) return;
-    masterGain.gain.cancelScheduledValues(ctx.currentTime);
-    masterGain.gain.linearRampToValueAtTime(m?0.0:0.16, ctx.currentTime+0.8);
+    outputGain.gain.cancelScheduledValues(ctx.currentTime);
+    outputGain.gain.linearRampToValueAtTime(m?0.0:1.0, ctx.currentTime+0.8);
   }
 
   function enterNotebookAudio(){
     if(!ctx) return;
+    notebookOpenAudio=true;
     filterNode.frequency.cancelScheduledValues(ctx.currentTime);
     filterNode.frequency.linearRampToValueAtTime(650, ctx.currentTime+1.2);
     masterGain.gain.cancelScheduledValues(ctx.currentTime);
-    masterGain.gain.linearRampToValueAtTime(muted?0.0:0.1, ctx.currentTime+1.2);
+    masterGain.gain.linearRampToValueAtTime(0.14, ctx.currentTime+1.2);
+    // step outside fades away, and the room rings out — lots of echo
+    reverbSend.gain.cancelScheduledValues(ctx.currentTime);
+    reverbSend.gain.linearRampToValueAtTime(0.55, ctx.currentTime+1.4);
+    dryGain.gain.cancelScheduledValues(ctx.currentTime);
+    dryGain.gain.linearRampToValueAtTime(0.65, ctx.currentTime+1.4);
+    if(windGain){
+      windGain.gain.cancelScheduledValues(ctx.currentTime);
+      windGain.gain.linearRampToValueAtTime(0.02, ctx.currentTime+1.4);
+    }
   }
   function exitNotebookAudio(){
     if(!ctx) return;
+    notebookOpenAudio=false;
     filterNode.frequency.cancelScheduledValues(ctx.currentTime);
     filterNode.frequency.linearRampToValueAtTime(2200, ctx.currentTime+1.0);
     masterGain.gain.cancelScheduledValues(ctx.currentTime);
-    masterGain.gain.linearRampToValueAtTime(muted?0.0:0.16, ctx.currentTime+1.0);
+    masterGain.gain.linearRampToValueAtTime(0.20, ctx.currentTime+1.0);
+    reverbSend.gain.cancelScheduledValues(ctx.currentTime);
+    reverbSend.gain.linearRampToValueAtTime(0.12, ctx.currentTime+1.0);
+    dryGain.gain.cancelScheduledValues(ctx.currentTime);
+    dryGain.gain.linearRampToValueAtTime(1.0, ctx.currentTime+1.0);
+    if(windGain){
+      windGain.gain.cancelScheduledValues(ctx.currentTime);
+      windGain.gain.linearRampToValueAtTime(0.075, ctx.currentTime+1.5);
+    }
+  }
+
+  // a soft key-tick for typing — a short, quiet, slightly randomized click
+  function typeTick(){
+    if(!ctx || muted) return;
+    const t=ctx.currentTime;
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+    o.type='square';
+    o.frequency.value = 1400 + Math.random()*500;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.035+Math.random()*0.015, t+0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+0.045);
+    o.connect(g); g.connect(dryGain);
+    o.start(t); o.stop(t+0.05);
   }
 
   const muteBtn=document.getElementById('muteBtn');
@@ -1106,6 +1340,7 @@
   function openNotebook(){
     startAmbient();
     document.body.classList.add('notebook-open');
+    playTuningFork();
     enterNotebookAudio();
     setTimeout(function(){ noteArea.focus(); }, 500);
   }
@@ -1118,6 +1353,11 @@
   voidLayer.addEventListener('click', closeNotebook);
   window.addEventListener('keydown', function(e){
     if(e.key==='Escape' && document.body.classList.contains('notebook-open')) closeNotebook();
+  });
+
+  // a soft tick on every keystroke inside the notebook — notes, calendar, the grid
+  document.querySelector('.notebook').addEventListener('input', function(e){
+    if(e.target && (e.target.tagName==='TEXTAREA' || e.target.tagName==='INPUT')) typeTick();
   });
 
   // ---------- Tabs ----------
@@ -1455,6 +1695,50 @@
     });
   });
   calcUpdate();
+
+  // a soft tick whenever any calculator key is pressed, on-screen or physical
+  document.querySelector('.calc-grid').addEventListener('click', function(e){
+    if(e.target.closest('.calc-btn')) typeTick();
+  });
+
+  // let the physical keyboard drive the calculator when its tab is open —
+  // but only when focus isn't sitting in a text field (like the scratch grid)
+  function calcBackspace(){
+    calcCurrent = calcCurrent.length>1 ? calcCurrent.slice(0,-1) : '0';
+    if(calcCurrent==='-') calcCurrent='0';
+    calcUpdate();
+  }
+  window.addEventListener('keydown', function(e){
+    if(activeTab!=='calc' || !document.body.classList.contains('notebook-open')) return;
+    const active=document.activeElement;
+    const tag=active ? active.tagName : '';
+    if(tag==='INPUT' || tag==='TEXTAREA') return;
+    const grid=document.querySelector('.calc-grid');
+    if(e.key>='0' && e.key<='9'){
+      grid.querySelector('.calc-btn[data-digit="'+e.key+'"]').click();
+      e.preventDefault();
+    } else if(e.key==='.'){
+      grid.querySelector('.calc-btn[data-digit="."]').click();
+      e.preventDefault();
+    } else if(e.key==='+'){
+      grid.querySelector('.calc-btn[data-op="+"]').click(); e.preventDefault();
+    } else if(e.key==='-'){
+      grid.querySelector('.calc-btn[data-op="-"]').click(); e.preventDefault();
+    } else if(e.key==='*'){
+      grid.querySelector('.calc-btn[data-op="*"]').click(); e.preventDefault();
+    } else if(e.key==='/'){
+      grid.querySelector('.calc-btn[data-op="/"]').click(); e.preventDefault();
+    } else if(e.key==='Enter' || e.key==='='){
+      grid.querySelector('.calc-btn[data-action="equals"]').click(); e.preventDefault();
+    } else if(e.key==='Backspace'){
+      calcBackspace(); typeTick(); e.preventDefault();
+    } else if(e.key.toLowerCase()==='c' || e.key==='Delete'){
+      grid.querySelector('.calc-btn[data-action="clear"]').click(); e.preventDefault();
+    } else if(e.key==='%'){
+      grid.querySelector('.calc-btn[data-action="percent"]').click(); e.preventDefault();
+    }
+  });
+
   setFoot();
 
   // ---------- Scratch grid: a small formula pad beside the calculator ----------
@@ -1741,4 +2025,3 @@
 </script>
 </body>
 </html>
-
