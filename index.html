@@ -577,6 +577,11 @@
     color:#8ff5b8; font-size:16px; line-height:1.3; letter-spacing:0.09em;
     margin-bottom:10px;
   }
+  .cal-vault-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
+  .cal-vault-hint{
+    font-family:'VT323','IBM Plex Mono',monospace;
+    color:#3d5c4a; font-size:11px; line-height:1.4; margin-bottom:10px;
+  }
   .cal-grid{
     display:grid; grid-template-columns:repeat(7,1fr);
     gap:4px; margin-bottom:10px;
@@ -868,6 +873,11 @@
             <span id="calLabel">MONTH YEAR</span>
             <button class="term-btn small" id="calNext" aria-label="Next month">&#8594;</button>
           </div>
+          <div class="cal-vault-row">
+            <button class="term-btn small" id="calImportVault">&#127991; Import from Vault</button>
+            <button class="term-btn small ghost" id="calExportVault">Export calendar to Vault</button>
+          </div>
+          <div class="cal-vault-hint" id="calVaultHint">Only Girls / Lex / Asher / Car·Appt days move through here &mdash; the journal stays put.</div>
           <div class="cal-grid" id="calGrid"></div>
           <div id="calEditorWrap">
             <div class="cal-hint" id="calHint">tap a day to schedule something</div>
@@ -1884,6 +1894,18 @@
     clearTimeout(showVaultToast._t);
     showVaultToast._t=setTimeout(function(){ vaultToast.textContent=VAULT_HINT_DEFAULT; }, 7000);
   }
+  const calVaultHint=document.getElementById('calVaultHint');
+  const CAL_VAULT_HINT_DEFAULT=calVaultHint ? calVaultHint.textContent : '';
+  function showCalVaultToast(msg){
+    if(!calVaultHint) return;
+    calVaultHint.textContent=msg;
+    clearTimeout(showCalVaultToast._t);
+    showCalVaultToast._t=setTimeout(function(){ calVaultHint.textContent=CAL_VAULT_HINT_DEFAULT; }, 7000);
+  }
+  // whichever toast last kicked off a Vault trip is the one that gets to
+  // report back — this way the Links tab and the Calendar tab's own
+  // shortcut buttons each surface feedback where the person is actually looking
+  let activeVaultToast=showVaultToast;
 
   document.getElementById('openActionPlan').addEventListener('click', function(){
     window.open(ACTION_PLAN_URL, 'actionPlan3000Window');
@@ -1901,9 +1923,9 @@
     return dump;
   }
 
-  document.getElementById('saveToVaultBtn').addEventListener('click', function(){
-    const jsonStr=JSON.stringify(runeDump(), null, 2);
-    const filename='project-rune_'+new Date().toISOString().slice(0,10)+'.json';
+  // shared send path for both the full backup and the calendar-only export
+  function sendJsonToVault(dumpObj, filename){
+    const jsonStr=JSON.stringify(dumpObj, null, 2);
     const dataBase64=btoa(unescape(encodeURIComponent(jsonStr)));
     function sendNow(){
       vaultWindowRef.postMessage({type:'vault-add-file', name:filename, mime:'application/json', dataBase64:dataBase64}, VAULT_ORIGIN);
@@ -1911,27 +1933,54 @@
     if(vaultWindowRef && !vaultWindowRef.closed){
       sendNow();
       vaultWindowRef.focus();
-      showVaultToast('\ud83c\udffa Sending to The Vault\u2026');
+      activeVaultToast('\ud83c\udffa Sending to The Vault\u2026');
     } else {
       vaultWindowRef=window.open(VAULT_URL, 'theVaultWindow');
-      if(!vaultWindowRef){ showVaultToast('\u26a0\ufe0f Popup blocked \u2014 allow popups for this page and try again.'); return; }
+      if(!vaultWindowRef){ activeVaultToast('\u26a0\ufe0f Popup blocked \u2014 allow popups for this page and try again.'); return; }
       saveToVaultPending=sendNow;
-      showVaultToast('\ud83c\udffa Opening The Vault\u2026');
+      activeVaultToast('\ud83c\udffa Opening The Vault\u2026');
       setTimeout(function(){
         if(saveToVaultPending){
           saveToVaultPending=null;
-          showVaultToast('\u26a0\ufe0f The Vault took too long to respond \u2014 try again once its tab has loaded.');
+          activeVaultToast('\u26a0\ufe0f The Vault took too long to respond \u2014 try again once its tab has loaded.');
         }
       }, 8000);
     }
-  });
+  }
 
-  document.getElementById('loadFromVaultBtn').addEventListener('click', function(){
+  // opens the Vault in picker mode — shared by the Links tab and the
+  // Calendar tab's own "Import from Vault" shortcut
+  function openVaultPicker(){
     const pickUrl=VAULT_URL + (VAULT_URL.indexOf('?')!==-1 ? '&' : '?') + 'pick=1';
     const win=window.open(pickUrl, 'theVaultWindow');
-    if(!win){ showVaultToast('\u26a0\ufe0f Popup blocked \u2014 allow popups for this page and try again.'); return; }
+    if(!win){ activeVaultToast('\u26a0\ufe0f Popup blocked \u2014 allow popups for this page and try again.'); return; }
     vaultWindowRef=win;
-    showVaultToast('\ud83c\udffa Pick a file in The Vault tab to load it here.');
+    activeVaultToast('\ud83c\udffa Pick a file in The Vault tab to load it here.');
+  }
+
+  document.getElementById('saveToVaultBtn').addEventListener('click', function(){
+    activeVaultToast=showVaultToast;
+    const filename='project-rune_'+new Date().toISOString().slice(0,10)+'.json';
+    sendJsonToVault(runeDump(), filename);
+  });
+  document.getElementById('loadFromVaultBtn').addEventListener('click', function(){
+    activeVaultToast=showVaultToast;
+    openVaultPicker();
+  });
+
+  // ---------- Calendar tab's own Vault shortcuts ----------
+  // Export deliberately carries ONLY the calendar (dates + Girls/Lex/Asher/
+  // Car·Appt tags) — never the journal entries, which stay off the Vault.
+  document.getElementById('calImportVault').addEventListener('click', function(){
+    activeVaultToast=showCalVaultToast;
+    openVaultPicker();
+  });
+  document.getElementById('calExportVault').addEventListener('click', function(){
+    activeVaultToast=showCalVaultToast;
+    const dump={};
+    dump[CAL_KEY]=localStorage.getItem(CAL_KEY) || JSON.stringify(calendarData);
+    const filename='project-rune-calendar_'+new Date().toISOString().slice(0,10)+'.json';
+    sendJsonToVault(dump, filename);
   });
 
   window.addEventListener('message', function(event){
@@ -1942,38 +1991,48 @@
       const pending=saveToVaultPending; saveToVaultPending=null; pending();
     }
     if(msg.type==='vault-add-file-ack'){
-      showVaultToast(msg.ok ? '\ud83c\udffa Saved to The Vault.' : '\u26a0\ufe0f The Vault couldn\'t save that file.');
+      activeVaultToast(msg.ok ? '\ud83c\udffa Saved to The Vault.' : '\u26a0\ufe0f The Vault couldn\'t save that file.');
     }
     if(msg.type==='vault-file-picked'){
       try{
         const jsonText=decodeURIComponent(escape(atob(msg.dataBase64)));
         handleIncomingVaultFile(jsonText, msg.name);
       }catch(e){
-        showVaultToast('\u26a0\ufe0f Couldn\'t read that file from The Vault.');
+        activeVaultToast('\u26a0\ufe0f Couldn\'t read that file from The Vault.');
       }
     }
   });
 
   function handleIncomingVaultFile(jsonText, name){
     let data;
-    try{ data=JSON.parse(jsonText); }catch(e){ showVaultToast('\u26a0\ufe0f That file isn\'t valid JSON.'); return; }
+    try{ data=JSON.parse(jsonText); }catch(e){ activeVaultToast('\u26a0\ufe0f That file isn\'t valid JSON.'); return; }
     const keys=Object.keys(data);
     const isOwn = keys.some(function(k){ return k.indexOf('projectRune_')===0; });
     const isActionPlan = keys.some(function(k){ return k.indexOf('actionPlan3000_')===0; });
     if(isOwn){
+      // a calendar-only export restores just that key and skips the reload —
+      // no need to refresh the whole notebook for one panel's worth of data
+      const calendarOnly = keys.every(function(k){ return k===CAL_KEY; });
       keys.filter(function(k){ return k.indexOf('projectRune_')===0; }).forEach(function(k){
         try{ localStorage.setItem(k, data[k]); }catch(e){}
       });
-      showVaultToast('\ud83c\udffa Restored "'+name+'" \u2014 reloading\u2026');
-      setTimeout(function(){ location.reload(); }, 900);
+      if(calendarOnly){
+        try{ calendarData=JSON.parse(data[CAL_KEY]||'{}'); }catch(e){ calendarData={}; }
+        renderCalendar();
+        setFoot();
+        activeVaultToast('\ud83c\udffa Calendar restored from "'+name+'".');
+      } else {
+        activeVaultToast('\ud83c\udffa Restored "'+name+'" \u2014 reloading\u2026');
+        setTimeout(function(){ location.reload(); }, 900);
+      }
       return;
     }
     if(isActionPlan){
       const merged=mergeActionPlanIntoCalendar(data);
-      showVaultToast(merged ? ('\ud83c\udffa Pulled '+merged+' day'+(merged===1?'':'s')+' in from Action Plan 3000.') : '\ud83c\udffa Nothing new to pull in from that backup.');
+      activeVaultToast(merged ? ('\ud83c\udffa Pulled '+merged+' day'+(merged===1?'':'s')+' in from Action Plan 3000.') : '\ud83c\udffa Nothing new to pull in from that backup.');
       return;
     }
-    showVaultToast('\u26a0\ufe0f Didn\'t recognize that file.');
+    activeVaultToast('\u26a0\ufe0f Didn\'t recognize that file.');
   }
 
   // Action Plan 3000's girlsSchedule is keyed by the MONDAY of each week
