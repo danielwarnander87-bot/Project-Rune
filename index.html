@@ -635,16 +635,16 @@
       inset 0 0 0 3px rgba(10,8,6,0.85),
       inset 0 0 50px rgba(0,0,0,0.35);
   }
-  .stand-bg{position:absolute; inset:-2%; z-index:0; overflow:hidden; border-radius:18px;}
+  .stand-bg{position:absolute; inset:0; z-index:0; overflow:hidden; border-radius:18px;}
   .stand-bg img{
-    width:100%; height:100%; object-fit:cover; object-position:center 18%; display:block;
+    width:100%; height:100%; object-fit:cover; object-position:center 15%; display:block;
     filter:url(#crtFisheye) saturate(1.35) contrast(1.12) brightness(1.08);
-    transform:scale(1.02);
+    transform:scale(1.04);
     animation:standBattlePulse 7s ease-in-out infinite, standFlicker 5.5s steps(1) infinite;
   }
   @keyframes standBattlePulse{
-    0%, 100%{ transform:scale(1.02); }
-    50%{ transform:scale(1.05); }
+    0%, 100%{ transform:scale(1.04); }
+    50%{ transform:scale(1.08); }
   }
   @keyframes standFlicker{
     0%, 92%, 100%{ filter:url(#crtFisheye) saturate(1.35) contrast(1.12) brightness(1.08); }
@@ -1037,7 +1037,9 @@
   <defs>
     <filter id="crtFisheye" x="-15%" y="-15%" width="130%" height="130%">
       <feImage result="dispMap" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAAHYElEQVR4nO3XsQ0AIBADMR6x/8w0MMXZRVaIbtY31lprS7sXAEkOACDqvBgAIEYBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAohQAQJQCAIhSAABRCgAgSgEARCkAgCgFABClAACiFABAlAIAiFIAAFEKACBKAQBEKQCAKAUAEKUAAKIUAECUAgCIUgAAUQoAIEoBAEQpAIAoBQAQpQAAoi4xdAf8j9BUCAAAAABJRU5ErkJggg==" x="0%" y="0%" width="100%" height="100%" preserveAspectRatio="none"/>
-      <feDisplacementMap in="SourceGraphic" in2="dispMap" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+      <feDisplacementMap in="SourceGraphic" in2="dispMap" scale="16" xChannelSelector="R" yChannelSelector="G">
+        <animate attributeName="scale" values="9;24;12;22;9" dur="9s" repeatCount="indefinite"/>
+      </feDisplacementMap>
     </filter>
   </defs>
 </svg>
@@ -1567,6 +1569,113 @@
     }
   }
 
+  // ---------- The Stand's theme ----------
+  // an original loop, softer and more lyrical than a chiptune fanfare —
+  // slow triangle-wave lead (lightly doubled for warmth) over a held pad,
+  // D major with a wistful I - iii - IV - V turn instead of a bouncy hook
+  const STAND_ROOT=293.66; // D4
+  const STAND_BPM=84;
+  const standBeat=60/STAND_BPM;
+  function standFreq(semi){ return STAND_ROOT*Math.pow(2, semi/12); }
+  // one 4-bar phrase: [semitone, length in beats] — long, singing note values
+  const standMelody=[
+    [12,1],[16,0.5],[19,0.5],[16,1],[12,1],
+    [19,1],[17,0.5],[16,0.5],[14,1],[12,1],
+    [17,1],[21,0.5],[19,0.5],[17,1],[16,1],
+    [14,1],[12,0.5],[11,0.5],[12,2]
+  ];
+  const standChordRoots=[0,4,5,7]; // D - F#m - G - A : I - iii - IV - V, one per bar
+  let standGain=null, standLeadBus=null, standBassBus=null;
+  let standRunning=false, standTimer=null;
+  let standNextTime=0, standNoteIndex=0, standBarNextTime=0, standBarIndex=0;
+
+  function initStandBus(){
+    if(standGain) return;
+    standGain=ctx.createGain(); standGain.gain.value=0;
+    standLeadBus=ctx.createGain(); standLeadBus.gain.value=0.46;
+    standBassBus=ctx.createGain(); standBassBus.gain.value=0.3;
+    standLeadBus.connect(standGain); standBassBus.connect(standGain);
+    standGain.connect(dryGain);
+    const standSend=ctx.createGain(); standSend.gain.value=0.22;
+    standGain.connect(standSend); standSend.connect(convolver);
+  }
+  // a soft, lightly-doubled triangle lead — legato attack/release, no buzz
+  function standLeadNote(semi, time, dur){
+    const o1=ctx.createOscillator(), o2=ctx.createOscillator(), g=ctx.createGain();
+    o1.type='triangle'; o1.frequency.value=standFreq(semi);
+    o2.type='triangle'; o2.frequency.value=standFreq(semi)*1.004; // gentle detune, chorus-like warmth
+    const g2=ctx.createGain(); g2.gain.value=0.6;
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.linearRampToValueAtTime(0.42, time+0.06);
+    g.gain.setValueAtTime(0.42, time+Math.max(0.06, dur-0.18));
+    g.gain.exponentialRampToValueAtTime(0.0001, time+dur+0.02);
+    o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(standLeadBus);
+    o1.start(time); o2.start(time); o1.stop(time+dur+0.08); o2.stop(time+dur+0.08);
+  }
+  // a held, slow-swelling pad note — root + fifth, one per bar, for smoothness
+  function standBassNote(semi, time, dur){
+    const o1=ctx.createOscillator(), o2=ctx.createOscillator(), g=ctx.createGain();
+    o1.type='triangle'; o1.frequency.value=standFreq(semi-12);
+    o2.type='triangle'; o2.frequency.value=standFreq(semi-12+7);
+    const g2=ctx.createGain(); g2.gain.value=0.5;
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.linearRampToValueAtTime(0.32, time+dur*0.3);
+    g.gain.linearRampToValueAtTime(0.2, time+dur*0.75);
+    g.gain.exponentialRampToValueAtTime(0.0001, time+dur+0.05);
+    o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(standBassBus);
+    o1.start(time); o2.start(time); o1.stop(time+dur+0.1); o2.stop(time+dur+0.1);
+  }
+  function standScheduler(){
+    if(!standRunning) return;
+    const lookahead=0.35;
+    while(standNextTime < ctx.currentTime+lookahead){
+      const note=standMelody[standNoteIndex % standMelody.length];
+      const dur=note[1]*standBeat;
+      standLeadNote(note[0], standNextTime, dur*0.96);
+      standNextTime += dur;
+      standNoteIndex++;
+    }
+    while(standBarNextTime < ctx.currentTime+lookahead){
+      const root=standChordRoots[standBarIndex % standChordRoots.length];
+      standBassNote(root, standBarNextTime, standBeat*4*0.98);
+      standBarNextTime += standBeat*4;
+      standBarIndex++;
+    }
+    standTimer=setTimeout(standScheduler, 110);
+  }
+  function startStandTheme(){
+    initAudio();
+    initStandBus();
+    if(ctx.state==='suspended') ctx.resume();
+    if(!standRunning){
+      standRunning=true;
+      standNoteIndex=0; standBarIndex=0;
+      standNextTime=ctx.currentTime+0.2;
+      standBarNextTime=ctx.currentTime+0.2;
+      standScheduler();
+    }
+    if(muted) return;
+    standGain.gain.cancelScheduledValues(ctx.currentTime);
+    standGain.gain.linearRampToValueAtTime(0.9, ctx.currentTime+0.8);
+    // duck the wandering ambient pad underneath so the two don't clash keys
+    if(masterGain){
+      masterGain.gain.cancelScheduledValues(ctx.currentTime);
+      masterGain.gain.linearRampToValueAtTime(0.03, ctx.currentTime+0.8);
+    }
+  }
+  function stopStandTheme(){
+    if(standGain){
+      standGain.gain.cancelScheduledValues(ctx.currentTime);
+      standGain.gain.linearRampToValueAtTime(0.0, ctx.currentTime+0.6);
+    }
+    standRunning=false;
+    if(standTimer){ clearTimeout(standTimer); standTimer=null; }
+    if(masterGain){
+      masterGain.gain.cancelScheduledValues(ctx.currentTime);
+      masterGain.gain.linearRampToValueAtTime(notebookOpenAudio?0.14:0.20, ctx.currentTime+0.8);
+    }
+  }
+
   function setMuted(m){
     muted=m;
     if(!ctx) return;
@@ -1716,11 +1825,13 @@
     document.body.classList.add('notebook-open');
     playTuningFork();
     enterNotebookAudio();
+    if(activeTab==='notes') startStandTheme();
     setTimeout(function(){ noteArea.focus(); }, 500);
   }
   function closeNotebook(){
     document.body.classList.remove('notebook-open');
     exitNotebookAudio();
+    stopStandTheme();
   }
   openBtn.addEventListener('click', function(){
     if(!goalData.text.trim() && !goalData.steps.length){
@@ -1863,9 +1974,12 @@
       tabs.forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
       Object.keys(panels).forEach(function(k){ panels[k].hidden = (k!==btn.dataset.tab); });
+      const wasNotes = activeTab==='notes';
       activeTab=btn.dataset.tab;
       setFoot();
       if(activeTab==='cal') renderCalendar();
+      if(activeTab==='notes' && !wasNotes) startStandTheme();
+      else if(activeTab!=='notes' && wasNotes) stopStandTheme();
     });
   });
 
